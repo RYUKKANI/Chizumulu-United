@@ -29,7 +29,7 @@ function translateMemberError(error){
 function authMessage(message,error=false){const el=document.querySelector('#auth-message');if(el){el.textContent=message;el.dataset.error=String(error);}}
 function clearClubAccess(){
   membership.generation++;clearTimeout(cloud.timer);cloud.ready=false;cloud.loading=false;cloud.draft=null;cloud.inFlight=false;cloud.conflict=false;cloud.error='';cloud.errorStatus=0;cloud.revision=0;
-  state=clone(SEED);pendingRestore=null;undoState=null;draftLineup=null;logsBatch=null;fixturesBatch=null;storageOK=true;view='players';
+  state=clone(SEED);pendingRestore=null;undoState=null;draftLineup=null;logsBatch=null;fixturesBatch=null;storageOK=true;view='dashboard';
   closeDialog();document.querySelector('#cloud-loader').hidden=true;document.querySelector('#cloud-banner').hidden=true;
   document.body.classList.add('membership-locked');
   document.querySelector('#nav').innerHTML='';document.querySelector('.topnav').classList.add('auth-hidden');document.body.classList.remove('menu-open');
