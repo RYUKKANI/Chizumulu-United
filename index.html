@@ -1617,6 +1617,8 @@ if(CLOUD_SITE){
  setInterval(()=>{if(storageLink.connected&&storageLink.window?.closed){storageLink.connected=false;setConnectionLabel();cloud.error=connectionError().message;updateSaveStatus();}},1200);
  document.addEventListener('click',event=>{if(event.target.closest('[data-action="cloud-retry"]')&&!storageLink.connected){connectStorage();}},true);
  document.addEventListener('click',event=>{if(event.target.closest('[data-action="language"]')){if(!cloud.ready)showStorageConnect();setConnectionLabel();}});
+ let connectionLanguage=document.documentElement.lang;
+ new MutationObserver(()=>{const next=document.documentElement.lang;if(next===connectionLanguage)return;connectionLanguage=next;if(!cloud.ready)showStorageConnect();setConnectionLabel();}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
 }
 
 </script>
