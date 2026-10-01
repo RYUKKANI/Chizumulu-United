@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chizumulu United · Club Manager</title>
+<meta name="description" content="Chizumulu United 구단 통합 관리">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5fa;color:#063967;font:14px system-ui,-apple-system,'Segoe UI',sans-serif}.connection{height:58px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;background:#fff;border-bottom:1px solid #dde7f1}.connection strong{font-size:15px}.actions{display:flex;align-items:center;gap:10px}.hint{color:#61768e;font-size:13px}.button{border:1px solid #d3e0ef;border-radius:12px;padding:9px 14px;background:#fff;color:#00438b;text-decoration:none;font:inherit;cursor:pointer}.primary{background:#00438b;color:white;border-color:#00438b}iframe{position:absolute;top:58px;left:0;width:100%;height:calc(100dvh - 58px);border:0;background:#f1f5fa}.help{position:fixed;top:70px;right:16px;width:min(460px,calc(100% - 32px));padding:20px 24px;background:#fff;border-radius:22px;box-shadow:0 12px 38px #16395730;z-index:10;line-height:1.7}.help[hidden]{display:none}.help p{margin:0 0 10px}.help h2{margin:0 0 8px;font-size:18px}@media(max-width:800px){.hint{display:none}.connection{padding:8px 10px;gap:8px}.button{padding:8px 10px;font-size:12px}.connection strong{font-size:13px}}
+</style>
+</head>
+<body>
+<header class="connection"><strong>Chizumulu United</strong><div class="actions"><span class="hint" id="hint">수정 기록은 로그인한 저장 서버에 보관됩니다.</span><button class="button" id="help-toggle" type="button" aria-expanded="false">접속 안내</button><a class="button primary" id="login" href="https://chizumulu-club-manager.ryuguler07.chatgpt.site" target="_blank" rel="noopener noreferrer">저장 서버 로그인</a><button class="button" id="language" type="button">EN</button></div></header>
+<aside class="help" id="help" hidden><h2 id="help-title">처음 접속할 때</h2><p id="help-text">로그인 화면이 나오면 ‘저장 서버 로그인’을 누르고 기존 ChatGPT 계정으로 로그인해 주세요. 로그인한 뒤 이 페이지로 돌아와 새로고침하면 됩니다.</p><p id="help-save">선수 정보와 사진은 기존 서버에 저장됩니다. 선수 수정 후 관리 화면 왼쪽 아래 ‘서버에 저장됨’을 확인해 주세요.</p><p id="help-fallback">브라우저가 내장 화면을 차단하면 로그인 버튼으로 열린 관리 화면에서 그대로 작업할 수 있습니다.</p><button class="button" id="refresh" type="button">관리 화면 새로고침</button></aside>
+<iframe id="manager" title="Chizumulu United 선수·구단 관리" src="https://chizumulu-club-manager.ryuguler07.chatgpt.site" allow="clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<script>
+let english=false;const get=id=>document.getElementById(id);
+get('help-toggle').onclick=()=>{get('help').hidden=!get('help').hidden;get('help-toggle').setAttribute('aria-expanded',String(!get('help').hidden));};
+get('refresh').onclick=()=>{get('manager').src='https://chizumulu-club-manager.ryuguler07.chatgpt.site';get('help').hidden=true;get('help-toggle').setAttribute('aria-expanded','false');};
+get('language').onclick=()=>{english=!english;document.documentElement.lang=english?'en':'ko';const text={hint:['수정 기록은 로그인한 저장 서버에 보관됩니다.','Edits are kept on your signed-in storage server.'],'help-toggle':['접속 안내','Connection help'],login:['저장 서버 로그인','Sign in to storage'],language:['EN','한국어'],'help-title':['처음 접속할 때','First visit'],'help-text':['로그인 화면이 나오면 ‘저장 서버 로그인’을 누르고 기존 ChatGPT 계정으로 로그인해 주세요. 로그인한 뒤 이 페이지로 돌아와 새로고침하면 됩니다.','If a sign-in screen appears, select “Sign in to storage” and use your existing ChatGPT account. Return here and refresh after signing in.'],'help-save':['선수 정보와 사진은 기존 서버에 저장됩니다. 선수 수정 후 관리 화면 왼쪽 아래 ‘서버에 저장됨’을 확인해 주세요.','Player details and photos stay on the existing server. After editing, check “Saved on server” in the manager’s lower-left corner.'],'help-fallback':['브라우저가 내장 화면을 차단하면 로그인 버튼으로 열린 관리 화면에서 그대로 작업할 수 있습니다.','If your browser blocks the embedded view, continue in the manager opened by the sign-in button.'],refresh:['관리 화면 새로고침','Refresh manager']};for(const [id,values] of Object.entries(text))get(id).textContent=values[Number(english)];};
+</script>
+</body></html>
