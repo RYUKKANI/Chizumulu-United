@@ -1,0 +1,33 @@
+const assert=require('node:assert/strict'),A=require('../administration-model.js'),M=require('../operations-model.js');
+let count=0;function test(name,fn){fn();count++;console.log('PASS '+name);}
+const actor={id:'staff-test',name:'구단 행정'},review={registration:'confirmed',registrationReference:'협회 승인 접수번호 TEST',fitness:'fit',participation:'yes',discipline:'clear',disciplineReference:'대회 담당자 확인 TEST'};
+function base(){return {version:1,meta:{season:'2026/27'},players:Array.from({length:11},(_,i)=>({id:'P'+i,name:'Test '+i,status:'Active',availability:'Available',registration:'Registered'})),fixtures:[{id:'F1',date:'2026-10-05',round:1,competitionId:'C1',opponent:'Test Opposition'}],competitions:[{id:'C1'}],matchLogs:[],lineups:{F1:Array.from({length:11},(_,i)=>({playerId:'P'+i,role:'Starter',captain:i===0,travel:true}))},operations:M.defaults()};}
+function ready(){let s=base();for(const p of s.players)s=A.setReview(s,'F1',p.id,review,actor);return s;}
+const task={id:'T1',title:'명단 제출',owner:'담당자',dueDate:'2026-10-01',status:'open',area:'matchPrep',fixtureId:'F1',playerId:'',step:'',note:'',evidence:''};
+test('legacy backups remain valid and are not changed by validation',()=>{const s=base(),old=JSON.stringify(s);assert.equal(A.validate(s),true);assert.equal(JSON.stringify(s),old);});
+test('legacy Registered alone never proves competition eligibility',()=>assert.equal(A.eligibility(base(),'P0',base().fixtures[0]).status,'review'));
+test('verified registration, participation and disciplinary evidence permits review',()=>{const s=ready();assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'ready');});
+test('registration evidence cannot be omitted',()=>assert.throws(()=>A.setReview(base(),'F1','P0',{...review,registrationReference:''},actor)));
+test('manual disciplinary confirmation requires evidence',()=>assert.throws(()=>A.setReview(base(),'F1','P0',{...review,disciplineReference:''},actor)));
+test('registration is specific to the competition',()=>{const s=ready();s.fixtures[0].competitionId='C2';assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'review');});
+test('registration is specific to the season',()=>{const s=ready();s.meta.season='2027/28';assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'review');});
+test('manual review cannot override an automatic suspension',()=>{let s=base();s.operations.discipline.rules.C1={enabled:true,effectiveDate:'2026-01-01',yellowThreshold:3,yellowBan:1,redBan:1,excludeSecondYellow:false,source:'Test rules'};s.operations.discipline.opening['C1|P0']={yellow:0,remaining:1};s=A.setReview(s,'F1','P0',review,actor);assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'blocked');});
+test('rejected registration blocks the player',()=>{const s=A.setReview(base(),'F1','P0',{...review,registration:'rejected'},actor);assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'blocked');});
+test('unfit or unavailable players cannot be verified for selection',()=>{const s=A.setReview(base(),'F1','P0',{...review,fitness:'unfit'},actor);assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'blocked');});
+test('date changes require a fresh player review',()=>{const s=ready();s.fixtures[0].date='2026-10-06';assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'review');});
+test('availability changes require a fresh review',()=>{const s=ready();s.players[0].availability='Unknown';assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'review');});
+test('new prior match cards require a fresh disciplinary review',()=>{const s=ready();s.fixtures.push({id:'F0',date:'2026-10-02',competitionId:'C1',gf:0,ga:0});s.matchLogs.push({fixtureId:'F0',playerId:'P0',yellow:1});assert.equal(A.eligibility(s,'P0',s.fixtures[0]).status,'review');});
+test('task saves preserve original records without mutating the caller',()=>{const s=base(),next=A.upsertTask(s,task,actor);assert.equal(s.administration,undefined);assert.deepEqual(next.players,s.players);assert.equal(next.administration.tasks.length,1);});
+test('completion requires notes or evidence',()=>assert.throws(()=>A.upsertTask(base(),{...task,status:'done'},actor)));
+test('completion evidence persists with owner and timestamp',()=>{const s=A.upsertTask(base(),{...task,status:'done',evidence:'접수번호 TEST'},actor);assert.equal(s.administration.tasks[0].updated.name,actor.name);assert.equal(A.validate(JSON.parse(JSON.stringify(s))),true);});
+test('invalid dates and unknown linked players are rejected',()=>{assert.throws(()=>A.upsertTask(base(),{...task,dueDate:'2026-02-30'},actor));assert.throws(()=>A.upsertTask(base(),{...task,playerId:'missing'},actor));});
+test('overdue work sorts ahead of future and completed work',()=>assert.deepEqual(A.taskOrder([{...task,id:'later',dueDate:'2026-10-10'},{...task,id:'done',status:'done'},{...task,id:'late'}],'2026-10-02').map(r=>r.id),['late','later','done']));
+test('match task generation is idempotent and preserves edits',()=>{let s=A.seedTasks(base(),'F1','담당자',actor,'seed');s.administration.tasks[0].note='기존 메모';s=A.seedTasks(s,'F1','다른 담당자',actor,'seed2');assert.equal(s.administration.tasks.length,6);assert.equal(s.administration.tasks[0].note,'기존 메모');assert.equal(s.administration.tasks[0].owner,'담당자');});
+test('squad final review fails while any player is unconfirmed',()=>assert.throws(()=>A.confirm(base(),'F1',actor)));
+test('squad final review requires eleven starters and one captain',()=>{const s=ready();s.lineups.F1.pop();assert.throws(()=>A.confirm(s,'F1',actor));const t=ready();t.lineups.F1[0].captain=false;assert.throws(()=>A.confirm(t,'F1',actor));});
+test('verified squad stores a confirmed snapshot',()=>{const s=A.confirm(ready(),'F1',actor);assert.equal(A.confirmation(s,s.fixtures[0]).status,'confirmed');assert.equal(s.administration.confirmations.F1.entries.length,11);});
+test('changing a squad invalidates its confirmation',()=>{const s=A.confirm(ready(),'F1',actor);s.lineups.F1[0].travel=false;assert.equal(A.confirmation(s,s.fixtures[0]).status,'stale');});
+test('changing the schedule invalidates confirmation',()=>{const s=A.confirm(ready(),'F1',actor);s.fixtures[0].date='2026-10-07';assert.equal(A.confirmation(s,s.fixtures[0]).status,'stale');});
+test('registration withdrawal invalidates confirmation',()=>{let s=A.confirm(ready(),'F1',actor);s=A.setReview(s,'F1','P0',{...review,registration:'rejected'},actor);assert.equal(A.confirmation(s,s.fixtures[0]).status,'stale');assert.throws(()=>A.confirm(s,'F1',actor));});
+test('postponed matches cannot be finally confirmed',()=>{const s=ready();s.fixtures[0].scheduleStatus='Postponed';assert.throws(()=>A.confirm(s,'F1',actor));});
+console.log(count+' administration checks passed.');
