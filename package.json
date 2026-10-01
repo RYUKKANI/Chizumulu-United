@@ -1,10 +1,11 @@
 {
   "name": "chizumulu-united-club-manager",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
     "test:db": "node tests/database.cjs",
-    "test:browser": "node tests/browser.cjs"
+    "test:browser": "node tests/browser.cjs",
+    "test:operations": "node tests/operations.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",
