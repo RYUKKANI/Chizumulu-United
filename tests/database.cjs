@@ -49,6 +49,18 @@ async function main(){
   await denied(admin,`select public.admin_update_club_member($1,'admin','active')`,[admin]);
   await db.exec('reset role');await db.query(`update auth.users set email='updated@example.test' where id=$1`,[member]);
   check((await as(member,'select email from public.club_members')).rows[0].email==='updated@example.test');
+  const operationalState=JSON.parse(JSON.stringify(state));
+  operationalState.operations=require('../operations-model.js').defaults();
+  operationalState.operations.finance.openingBalance=125000;
+  operationalState.operations.finance.transactions.push({id:'test-income',date:'2026-10-01',type:'income',category:'Tickets',description:'Test receipt',amount:3500,voided:false});
+  operationalState.operations.notice={enabled:true,title:'Training notice',body:'Test shared notice'};
+  operationalState.operations.discipline.rules.test={enabled:true,yellowThreshold:3,yellowBan:1,redBan:1,effectiveDate:'2026-10-01',source:'Test',excludeSecondYellow:true};
+  await as(admin,`select public.save_club_state($1,3,$2)`,[JSON.stringify(operationalState),'00000000-0000-4000-8000-000000000015']);
+  const roundtrip=(await as(admin,'select state from public.club_state')).rows[0].state;
+  assert.deepEqual(roundtrip.operations,operationalState.operations);checks++;
+  check(roundtrip.players.length===operationalState.players.length);
+  check(roundtrip.fixtures.length===operationalState.fixtures.length);
+  check((await as(member,'select state from public.club_state')).rows.length===0);
   await db.close();console.log(`Database: ${checks} authorization, approval, audit and save checks passed`);
 }
 main().catch(error=>{console.error(error);process.exit(1);});

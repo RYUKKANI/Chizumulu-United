@@ -57,11 +57,12 @@ async function main(){
   const row=admin.locator('tr').filter({hasText:'member@example.test'});await row.locator('[data-status=active]').click();await admin.locator('[data-action=member-change-confirm]').click();await row.getByText('사용 중',{exact:true}).waitFor();
   await member.locator('[data-action=member-check]').click();await member.locator('.account-bar').waitFor();assert.equal(await member.locator('[data-action=member-list]').count(),0);
   // A real player edit exercises the original UI, SDK, save RPC and database.
+  await member.locator('.menu-toggle').click();await member.locator('[data-action=nav][data-view=players]').first().click();
   await member.locator('[data-action=new-player]').click();
   await member.locator('#player-form [name=name]').fill('Test Player');await member.locator('#player-form [name=number]').fill('9');await member.locator('#player-form [type=submit]').click();await member.locator('#save-status').filter({hasText:'사이트에 저장됨'}).waitFor();
   assert.equal((await sql(adminId,'select state from public.club_state')).rows[0].state.players[0].name,'Test Player');
   await member.locator('.menu-toggle').click();await member.locator('[data-action=nav][data-view=data]').first().click();assert.equal(await member.locator('[data-action=snapshot]').count(),0);assert.equal(await member.locator('[data-action=backup]').count(),1);
-  await member.reload();await member.locator('.account-bar').waitFor();await member.getByText('Test Player',{exact:true}).first().waitFor();
+  await member.reload();await member.locator('.account-bar').waitFor();await member.locator('.menu-toggle').click();await member.locator('[data-action=nav][data-view=players]').first().click();await member.getByText('Test Player',{exact:true}).first().waitFor();
   await admin.locator('[data-action=member-refresh]').click();await admin.screenshot({path:'work/members-desktop.png',fullPage:true});
   // Last administrator protection reports a clear error and keeps access.
   const adminRow=admin.locator('tr').filter({hasText:'admin@example.test'});await adminRow.locator('[data-role=member]').click();await admin.locator('[data-action=member-change-confirm]').click();await admin.getByText('마지막 관리자 계정은 비활성화하거나 일반 회원으로 변경할 수 없습니다.',{exact:true}).waitFor();await admin.locator('[data-action=close-dialog]').first().click();
