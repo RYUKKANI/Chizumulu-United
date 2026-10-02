@@ -8,7 +8,7 @@ async function main(){
     create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     grant usage on schema auth to anon,authenticated; grant execute on function auth.uid() to anon,authenticated;`);
-  await db.exec(fs.readFileSync(path.resolve(__dirname,'../supabase/migrations/202610010001_members_and_club.sql'),'utf8'));
+  for(const migration of fs.readdirSync(path.join(__dirname,'../supabase/migrations')).filter(x=>x.endsWith('.sql')).sort())await db.exec(fs.readFileSync(path.join(__dirname,'../supabase/migrations',migration),'utf8'));
   const admin='00000000-0000-4000-8000-000000000001',member='00000000-0000-4000-8000-000000000002',pending='00000000-0000-4000-8000-000000000003';
   await db.query(`insert into auth.users(id,email,raw_user_meta_data) values ($1,'admin@example.test','{"display_name":"관리자"}'),($2,'member@example.test','{"display_name":"선수 담당","role":"admin","status":"active"}'),($3,'pending@example.test','{"display_name":"새 회원"}')`,[admin,member,pending]);
   let checks=0;
@@ -38,7 +38,8 @@ async function main(){
   await denied(pending,`select public.save_club_state($1,2,$2)`,[JSON.stringify(state),mutation1]);
   await denied(pending,`select public.save_club_state($1,1,$2)`,[JSON.stringify(state),mutation2],'40001');
   const saved2=await as(pending,`select public.save_club_state($1,2,$2) result`,[JSON.stringify(state),mutation2]);check(saved2.rows[0].result.revision===3);
-  await denied(member,`select public.save_club_state($1,1,$2)`,[JSON.stringify(state),mutation1],'40001');
+  check((await as(member,`select public.save_club_state($1,1,$2) result`,[JSON.stringify(state),mutation1])).rows[0].result.revision===2);
+  await denied(member,`select public.save_club_state($1,1,$2)`,[JSON.stringify({...state,settings:{modified:true}}),mutation1],'22023');
   await as(admin,`select public.admin_update_club_member($1,'member','disabled')`,[member]);
   check((await as(member,'select * from public.club_state')).rows.length===0);
   await denied(member,`select public.save_club_state($1,3,$2)`,[JSON.stringify(state),'00000000-0000-4000-8000-000000000013']);

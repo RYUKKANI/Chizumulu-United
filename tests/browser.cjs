@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 async function main(){
   const db=new PGlite();
   await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema auth to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;`);
-  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/202610010001_members_and_club.sql'),'utf8'));
+  for(const migration of fs.readdirSync(path.join(__dirname,'../supabase/migrations')).filter(x=>x.endsWith('.sql')).sort())await db.exec(fs.readFileSync(path.join(__dirname,'../supabase/migrations',migration),'utf8'));
   const accounts=new Map(),adminId=crypto.randomUUID();
   accounts.set('admin@example.test',{id:adminId,email:'admin@example.test',password:'AdminPassword!10',user_metadata:{display_name:'구단 관리자'}});
   await db.query(`insert into auth.users(id,email,raw_user_meta_data) values($1,$2,$3)`,[adminId,'admin@example.test',JSON.stringify({display_name:'구단 관리자'})]);await db.query(`update public.club_members set role='admin',status='active' where id=$1`,[adminId]);
@@ -28,7 +28,9 @@ async function main(){
         const id=url.searchParams.get('id')?.replace('eq.','');const rows=(await sql(user,'select * from public.club_members'+(id?' where id=$1':' order by created_at desc'),id?[id]:[])).rows;
         const single=req.headers().accept?.includes('object');if(single&&!rows.length){status=406;data={code:'PGRST116',message:'No row'};}else data=single?rows[0]:rows;
       }else if(url.pathname==='/rest/v1/club_state'){
-        const rows=(await sql(user,'select * from public.club_state where id=1')).rows;data=rows[0];if(!data){status=406;data={code:'PGRST116',message:'No row'};}
+        const columns=url.searchParams.get('select')==='revision'?'revision':'*';const rows=(await sql(user,'select '+columns+' from public.club_state where id=1')).rows;data=rows[0];if(!data){status=406;data={code:'PGRST116',message:'No row'};}
+      }else if(url.pathname==='/rest/v1/rpc/get_club_snapshot'){
+        data=(await sql(user,'select public.get_club_snapshot() result')).rows[0].result;
       }else if(url.pathname==='/rest/v1/rpc/admin_update_club_member'){
         data=(await sql(user,'select public.admin_update_club_member($1,$2,$3) result',[body.p_member_id,body.p_role,body.p_status])).rows[0].result;
       }else if(url.pathname==='/rest/v1/rpc/save_club_state'){
