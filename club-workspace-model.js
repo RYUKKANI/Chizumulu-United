@@ -11,5 +11,24 @@
     }return true;
   }
   function upsert(plans,record){validatePlans(plans);const next=(plans||[]).map(r=>({...r})),index=next.findIndex(r=>r.id===record.id),copy={id:record.id,date:record.date,time:record.time,type:record.type,minutes:record.minutes,topic:record.topic};if(index<0)next.push(copy);else next[index]=copy;validatePlans(next);return next;}
-  return {validatePlans,upsert};
+  function fixtureGroups(fixtures,today){
+    if(!dateValid(today))throw Error('경기 기준 날짜를 확인해 주세요.');
+    const cutoff=new Date(Date.parse(today+'T12:00:00Z')-4*86400000).toISOString().slice(0,10);
+    const groups={recent:[],upcoming:[],pending:[],played:[],postponed:[],all:[...fixtures]};
+    for(const f of fixtures){
+      const played=f.gf!=null&&f.ga!=null,dated=dateValid(f.date);
+      if(!played&&f.scheduleStatus==='Postponed')groups.postponed.push(f);
+      else if(dated&&f.date>=cutoff&&f.date<=today)groups.recent.push(f);
+      else if(played)groups.played.push(f);
+      else if(dated&&f.date<cutoff)groups.pending.push(f);
+      else groups.upcoming.push(f);
+    }
+    const round=(a,b)=>Number(a.round)-Number(b.round)||String(a.id).localeCompare(String(b.id));
+    const date=(a,b)=>(dateValid(a.date)?a.date:'9999-12-31').localeCompare(dateValid(b.date)?b.date:'9999-12-31')||String(a.kickoffTime||'99:99').localeCompare(String(b.kickoffTime||'99:99'))||round(a,b);
+    groups.upcoming.sort(date);groups.pending.sort(date);
+    groups.recent.sort((a,b)=>-date(a,b));groups.played.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||round(a,b));
+    groups.postponed.sort(round);groups.all.sort(round);
+    return groups;
+  }
+  return {validatePlans,upsert,fixtureGroups};
 });
