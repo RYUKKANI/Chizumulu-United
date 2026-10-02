@@ -1,0 +1,103 @@
+.mobile-account-menu,.mobile-lineup-save{display:none}
+.tactics-picker-search{width:100%;min-height:48px;font-size:16px;margin-bottom:12px}
+.tactics-picker-list{display:grid;gap:8px}
+.tactics-pick-player{display:grid;grid-template-columns:42px minmax(0,1fr);gap:4px 10px;width:100%;min-height:72px;padding:12px;border:1px solid #d3e0ed;border-radius:10px;background:#fff;color:#153a61;text-align:left;font:inherit;touch-action:pan-y}
+.tactics-pick-player:disabled{opacity:.65;background:#fff1f1}
+.tactics-pick-player:focus-visible{outline:3px solid #bd8600;outline-offset:2px}
+.tactics-pick-player .tactics-avatar{grid-row:span 2}
+.tactics-pick-player .tactics-names b{font-size:14px}
+.tactics-pick-player .tactics-names small{font-size:12px}
+.tactics-pick-player>small{font-size:12px;line-height:1.5}
+.tactics-player-actions{display:grid;gap:10px;margin-top:16px}
+.tactics-player-actions .btn{min-height:48px}
+@media(max-width:760px){
+ body[data-mobile-workflow="ready"] .main{padding-top:10px}
+ body[data-mobile-workflow="ready"] #content>.account-bar{display:none}
+ body[data-mobile-workflow="ready"] .mobile-account-menu{display:grid;gap:8px;border-top:1px solid #c8d9e9;padding-top:16px;margin-top:12px}
+ body[data-mobile-workflow="ready"] .mobile-account-menu .account-name{line-height:1.6;font-size:12px}
+ body[data-mobile-workflow="ready"] .mobile-account-menu .btn{min-height:44px;justify-content:flex-start}
+ body[data-mobile-workflow="ready"] .sidebar{overflow-y:auto}
+ body[data-mobile-workflow="ready"] .offline-status{padding:5px 10px;gap:6px;align-items:center;flex-wrap:nowrap;margin-bottom:10px;border-radius:10px;min-height:48px}
+ body[data-mobile-workflow="ready"] .offline-status>div:first-child{flex:1;min-width:0}
+ body[data-mobile-workflow="ready"] .offline-status [data-sync-summary]{font-size:11px;line-height:1.5}
+ body[data-mobile-workflow="ready"] .offline-status [data-sync-time],body[data-mobile-workflow="ready"] .offline-status .offline-tools{display:none}
+ body[data-mobile-workflow="ready"] .offline-status .offline-expand{min-height:44px;padding:6px 10px;flex-shrink:0}
+ body[data-mobile-workflow="ready"] .offline-status[data-expanded=true]{flex-wrap:wrap}
+ body[data-mobile-workflow="ready"] .offline-status[data-expanded=true] [data-sync-time]{display:block;font-size:11px}
+ body[data-mobile-workflow="ready"] .offline-status[data-expanded=true] .offline-tools{display:flex;order:3;width:100%;padding-bottom:5px}
+ body[data-mobile-workflow="ready"][data-workspace-view=players] .breadcrumbs,body[data-mobile-workflow="ready"][data-workspace-view=lineup] .breadcrumbs{display:none}
+ body[data-mobile-workflow="ready"][data-workspace-view=players] .pagehead,body[data-mobile-workflow="ready"][data-workspace-view=lineup] .pagehead{flex-direction:row;align-items:center;gap:8px;margin-bottom:6px}
+ body[data-mobile-workflow="ready"][data-workspace-view=players] .pagehead p,body[data-mobile-workflow="ready"][data-workspace-view=lineup] .pagehead p{display:none}
+ body[data-mobile-workflow="ready"][data-workspace-view=players] .pagehead h1,body[data-mobile-workflow="ready"][data-workspace-view=lineup] .pagehead h1{font-size:20px;margin:0;white-space:nowrap}
+ body[data-mobile-workflow="ready"][data-workspace-view=players] .pagehead .actions,body[data-mobile-workflow="ready"][data-workspace-view=lineup] .pagehead .actions{gap:5px;flex-wrap:nowrap;margin-left:auto}
+ body[data-mobile-workflow="ready"][data-workspace-view=players] .pagehead .btn,body[data-mobile-workflow="ready"][data-workspace-view=lineup] .pagehead .btn{min-height:44px;padding:8px;font-size:11px;white-space:nowrap}
+ body[data-mobile-workflow="ready"][data-workspace-view=lineup] .pagehead [data-tactics=save]{display:none}
+ body[data-mobile-workflow="ready"][data-workspace-view=lineup] .pagehead [data-tactics=print]{display:none}
+ body[data-mobile-workflow="ready"] .structure-tabs{overflow-x:auto;flex-wrap:nowrap;gap:14px;margin-bottom:12px}
+ body[data-mobile-workflow="ready"] .structure-tabs button{white-space:nowrap;flex-shrink:0}
+ body[data-mobile-workflow="ready"][data-workspace-view=players] #content>.compact-summary{display:none}
+ body[data-mobile-workflow="ready"] .compact-roster{overflow:visible}
+ body[data-mobile-workflow="ready"] .compact-roster .tabs{padding:0 8px;gap:4px;scrollbar-width:none}
+ body[data-mobile-workflow="ready"] .compact-roster .tabs::-webkit-scrollbar{display:none}
+ body[data-mobile-workflow="ready"] .roster-searchbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px;background:#fff;position:sticky;top:64px;z-index:20;border-bottom:1px solid #dbe5ef}
+ body[data-mobile-workflow="ready"] .roster-searchbar .search{min-width:0;flex:1;margin:0}
+ body[data-mobile-workflow="ready"] .roster-searchbar input{width:100%;min-height:44px;font-size:16px}
+ body[data-mobile-workflow="ready"] .roster-searchbar>.btn{min-height:44px}
+ body[data-mobile-workflow="ready"] .compact-roster .roster-extra-filters{display:grid;grid-column:1/-1;grid-template-columns:1fr;gap:8px;padding:0;border:0}
+ body[data-mobile-workflow="ready"] .compact-roster .roster-extra-filters[hidden]{display:none}
+ body[data-mobile-workflow="ready"] .roster-extra-filters select{width:100%;min-height:44px;font-size:16px}
+ body[data-mobile-workflow="ready"] .compact-roster .tablemeta{display:none}
+ body[data-mobile-workflow="ready"] .compact-roster .tablemeta>span{max-width:100%}
+ body[data-mobile-workflow="ready"] .compact-roster thead{display:none}
+ body[data-mobile-workflow="ready"] .compact-roster [data-roster-player]{cursor:pointer;touch-action:pan-y}
+ body[data-mobile-workflow="ready"] .compact-roster [data-roster-player]:active{background:#edf4fc}
+ body[data-mobile-workflow="ready"] .compact-roster td{padding:5px 10px}
+ body[data-mobile-workflow="ready"] .compact-roster .playername{display:flex;align-items:center;min-height:44px;font-size:14px;margin:0;text-align:left}
+ body[data-mobile-workflow="ready"] .compact-roster .player-cell>div{min-width:0}
+ body[data-mobile-workflow="ready"] .compact-roster .subtext{margin-top:-4px;font-size:12px}
+ body[data-mobile-workflow="ready"] .compact-roster .tiny-role{font-size:11px}
+ body[data-mobile-workflow="ready"] .tactics-controls{padding:10px;gap:8px;margin-bottom:10px}
+ body[data-mobile-workflow="ready"] .tactics-controls .field{margin:0}
+ body[data-mobile-workflow="ready"] .tactics-controls select{min-height:44px;font-size:16px}
+ body[data-mobile-workflow="ready"] .tactics-controls>.tactics-save-status{display:none}
+ body[data-mobile-workflow="ready"] .tactics-controls>[data-tactics=undo]{display:none}
+ body[data-mobile-workflow="ready"] .tactics-context{gap:6px;margin:10px 0}
+ body[data-mobile-workflow="ready"] .tactics-context p{margin:3px 0;font-size:12px}
+ body[data-mobile-workflow="ready"] .tactics-selection{min-height:0;padding:10px;margin:10px 0;font-size:13px}
+ body[data-mobile-workflow="ready"] .tactics-selection small{line-height:1.5}
+ body[data-mobile-workflow="ready"] .tactics-workbench{display:block}
+ body[data-mobile-workflow="ready"] .tactics-pool{display:none}
+ body[data-mobile-workflow="ready"] .tactics-pitch{min-height:460px;aspect-ratio:.78;max-width:440px}
+ body[data-mobile-workflow="ready"] .tactics-slot{width:21%;max-width:90px;padding:1px}
+ body[data-mobile-workflow="ready"] .tactics-position{font-size:11px;line-height:14px;margin-bottom:2px}
+ body[data-mobile-workflow="ready"] .tactics-handle{touch-action:pan-y;cursor:pointer}
+ body[data-mobile-workflow="ready"] .on-pitch{min-height:48px;height:48px;padding:0;cursor:pointer;gap:3px;justify-content:center;background:#ffffff18}
+ body[data-mobile-workflow="ready"] .on-pitch .tactics-avatar{display:none}
+ body[data-mobile-workflow="ready"] .on-pitch .tactics-names{width:100%;display:block}
+ body[data-mobile-workflow="ready"] .on-pitch .tactics-names b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;line-height:1.3}
+ body[data-mobile-workflow="ready"] .on-pitch .tactics-names small{display:none}
+ body[data-mobile-workflow="ready"] .on-pitch .tactics-player-meta{font-size:10px;line-height:12px;white-space:nowrap}
+ body[data-mobile-workflow="ready"] .tactics-empty{width:100%;min-height:48px;height:48px;padding:0;justify-content:center}
+ body[data-mobile-workflow="ready"] .tactics-empty>span{width:38px;height:38px}
+ body[data-mobile-workflow="ready"] .tactics-empty small{display:none}
+ body[data-mobile-workflow="ready"] .tactics-bench-head .btn{min-height:44px;font-size:12px}
+ body[data-mobile-workflow="ready"] .tactics-bench-cards{grid-template-columns:1fr}
+ body[data-mobile-workflow="ready"] .tactics-bench-cards .tactics-names b{font-size:13px}
+ body[data-mobile-workflow="ready"] .tactics-bench-cards .tactics-names small{font-size:11px}
+ body[data-mobile-workflow="ready"][data-workspace-view=lineup] .main{padding-bottom:110px}
+ body[data-mobile-workflow="ready"] .mobile-lineup-save{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;align-items:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid #c9d9e8;box-shadow:0 -3px 16px #12345112}
+ body[data-mobile-workflow="ready"] .mobile-lineup-save>div{flex:1;min-width:0}
+ body[data-mobile-workflow="ready"] .mobile-lineup-save strong{display:block;font-size:12px}
+ body[data-mobile-workflow="ready"] .mobile-lineup-save small{display:block;font-size:11px;margin-top:4px;color:#526b86}
+ body[data-mobile-workflow="ready"] .mobile-lineup-save .btn{min-height:48px;font-size:12px;padding:8px 12px}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog{width:min(440px,calc(100vw - 20px));max-width:calc(100vw - 20px);max-height:90dvh;margin:auto}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog .dialogbody{padding:14px}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog .dialoghead{padding:16px;gap:10px;align-items:center}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog .dialoghead>div:first-child{min-width:0;flex:1}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog .dialoghead h2{font-size:17px;overflow-wrap:anywhere}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog .dialoghead .actions{width:auto;flex:0 0 auto;display:flex;flex-direction:row;gap:6px}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog .dialoghead .actions .btn{width:auto;min-width:44px;min-height:44px;padding:8px}
+ body[data-mobile-workflow="ready"] #dialog.tactics-dialog .dialoghead .iconbtn{min-width:44px;min-height:44px}
+ body[data-mobile-workflow="ready"] #apply-app-update{bottom:100px!important}
+}
+@media print{.mobile-account-menu,.mobile-lineup-save{display:none!important}}
