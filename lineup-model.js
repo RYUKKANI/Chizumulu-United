@@ -18,7 +18,14 @@ const shapes={
 };
 const clone=x=>JSON.parse(JSON.stringify(x));
 const formation=x=>Object.hasOwn(shapes,x)?x:'4-3-3';
-function slots(shape){const rows=shapes[formation(shape)],out=[{id:'GK',group:'GK',x:50,y:91}];rows.forEach((row,i)=>row.forEach((id,j)=>out.push({id,group:i===0?'DF':i===rows.length-1?'FW':'MF',x:row.length===1?50:12+j*76/(row.length-1),y:76-i*59/(rows.length-1)})));return out;}
+function rowX(row,j){
+ if(row.length===1)return 50;
+ // Central pairs use the same spacing as the centre backs in a back four.
+ if(row.length===2)return 12+(j+1)*76/3;
+ if(row.length===3&&(row[1]==='CM'||row[1]==='CB'))return 50+(j-1)*76/3;
+ return 12+j*76/(row.length-1);
+}
+function slots(shape){const rows=shapes[formation(shape)],out=[{id:'GK',group:'GK',x:50,y:91}];rows.forEach((row,i)=>row.forEach((id,j)=>out.push({id,group:i===0?'DF':i===rows.length-1?'FW':'MF',x:rowX(row,j),y:76-i*59/(rows.length-1)})));return out;}
 function normalize(draft,players){const next=clone(draft),ss=slots(next.formation),used=new Set();next.formation=formation(next.formation);next.note=next.note||'';for(const r of next.entries){if(r.role!=='Starter'||!ss.some(s=>s.id===r.slot)||used.has(r.slot))delete r.slot;else used.add(r.slot);}
  for(const r of next.entries.filter(r=>r.role==='Starter'&&!r.slot)){const p=players.find(p=>p.id===r.playerId),target=ss.find(s=>!used.has(s.id)&&s.group===p?.position)||ss.find(s=>!used.has(s.id));if(target){r.slot=target.id;used.add(target.id);}}return next;}
 function place(draft,pid,target,{players,blockedIds=[],allowedFormerIds=[]}){const p=players.find(p=>p.id===pid);if(!p)throw Error('선수 기록이 없습니다.');if(target!=='remove'&&(blockedIds.includes(pid)||(p.status!=='Active'&&!allowedFormerIds.includes(pid))))throw Error('출전 불가 선수입니다.');const next=clone(draft),old=next.entries.find(r=>r.playerId===pid);if(target==='remove'){next.entries=next.entries.filter(r=>r.playerId!==pid);return next;}if(target!=='bench'&&!slots(next.formation).some(s=>s.id===target))throw Error('배치할 자리를 확인해 주세요.');const entry=old||{playerId:pid,role:'Sub',captain:false,travel:false};if(!old)next.entries.push(entry);if(target==='bench'){entry.role='Sub';entry.captain=false;delete entry.slot;return next;}
