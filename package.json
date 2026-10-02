@@ -1,8 +1,12 @@
 {
   "name": "chizumulu-united-club-manager",
-  "version": "3.2.0",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
+    "preview": "node tests/preview.cjs",
+    "test:offline-db": "node tests/offline-database.cjs",
+    "test:offline-client": "node tests/offline-client.cjs",
+    "test:media": "node tests/media.cjs",
     "test:db": "node tests/database.cjs",
     "test:browser": "node tests/browser.cjs",
     "test:operations": "node tests/operations.cjs",
@@ -12,6 +16,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",
+    "fake-indexeddb": "6.2.5",
     "playwright": "1.62.1"
   }
 }

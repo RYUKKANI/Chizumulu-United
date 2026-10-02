@@ -18,6 +18,9 @@ function translateMemberError(error){
     MEMBER_NOT_FOUND:cloudText('해당 회원을 찾을 수 없습니다. 목록을 새로고침해 주세요.','Member not found. Refresh the list.'),
     INVALID_CLUB_STATE:cloudText('저장할 기록의 형식을 확인해 주세요.','Check the format of the club records.'),
     CLUB_STATE_TOO_LARGE:cloudText('사진과 기록의 용량이 너무 큽니다. 백업을 보관한 뒤 사진 용량을 줄여 주세요.','The records and photos are too large. Back up the data and reduce photo sizes.'),
+    MUTATION_ID_REUSED:cloudText('저장 요청이 변경되었습니다. 백업 후 확인해 주세요.','The save request changed. Back up and review it.'),
+    MAINTENANCE:cloudText('기록 이전 중입니다. 입력 내용은 기기에 보관됩니다.','Records are being migrated. Your edits remain on this device.'),
+    CLIENT_UPGRADE_REQUIRED:cloudText('앱 업데이트가 필요합니다. 먼저 입력 내용을 백업해 주세요.','Update the app. Back up your edits first.'),
     'Invalid login credentials':cloudText('이메일 또는 비밀번호를 확인해 주세요.','Check your email and password.'),
     'Email not confirmed':cloudText('이메일의 가입 확인 링크를 먼저 눌러 주세요.','Confirm your email before signing in.'),
     'User already registered':cloudText('이미 가입한 이메일입니다. 로그인해 주세요.','This email is already registered. Please sign in.')
@@ -72,14 +75,14 @@ async function syncMemberSession(session){
   membership.user=session?.user||null;
   if(!session){membership.member=null;membership.recovery=false;showMemberLanding();return;}
   try{
-    const {data,error}=await membership.client.from('club_members').select('id,email,display_name,role,status,created_at,updated_at').eq('id',session.user.id).single();
+    const {data,error}=await membership.client.from('club_members').select('id,email,display_name,role,status,created_at,updated_at').eq('id',session.user.id).single().retry(false).abortSignal(AbortSignal.timeout(5000));
     if(sync!==membership.sync)return;
     if(error)throw translateMemberError(error);
     membership.member=data;
     if(data.status!=='active'){clearClubAccess();showMemberLanding();return;}
     if(membership.recovery){showMemberLanding();return;}
     if(!cloud.ready)await loadCloud();else render();
-  }catch(error){if(sync!==membership.sync)return;clearClubAccess();membership.member=null;showMemberLanding(error.message||cloudText('회원 정보를 확인하지 못했습니다.','Could not check membership.'));}
+  }catch(error){if(sync!==membership.sync)return;if(typeof restoreOfflineSession==='function'&&await restoreOfflineSession(session,error))return;clearClubAccess();membership.member=null;showMemberLanding(error.message||cloudText('회원 정보를 확인하지 못했습니다.','Could not check membership.'));}
 }
 async function checkMember(){const {data,error}=await membership.client.auth.getSession();if(error)throw translateMemberError(error);await syncMemberSession(data.session);}
 async function submitMemberAuth(form){
@@ -118,6 +121,15 @@ async function requestClub(method='GET',payload){
   const {data,error}=await membership.client.rpc('save_club_state',{p_state:payload.state,p_base_revision:payload.baseRevision,p_mutation_id:payload.mutationId});if(error)throw translateMemberError(error);
   if(!data||!Number.isSafeInteger(Number(data.revision))||data.mutationId!==payload.mutationId)throw clubError(cloudText('저장 완료를 확인하지 못했습니다. 다시 시도해 주세요.','Could not confirm the save. Retry.'),502);
   return {...data,revision:Number(data.revision)};
+}
+async function requestRevision(){
+  const {data,error}=await membership.client.from('club_state').select('revision').eq('id',1).single();
+  if(error)throw translateMemberError(error);return Number(data.revision);
+}
+function scheduleCloudRetry(){
+  clearTimeout(cloud.timer);
+  const delay=Math.min(300000,[1000,3000,8000,20000,60000,120000][Math.min(cloud.attempts-1,5)]||1000);
+  cloud.timer=setTimeout(()=>{if(document.visibilityState==='visible')flushCloud();else scheduleCloudRetry();},delay*(.8+Math.random()*.4));
 }
 function draftDatabase(){
   if(cloud.database)return cloud.database;
@@ -169,18 +181,24 @@ async function flushCloud(){
   try{
     await cloud.cacheQueue;if(generation!==membership.generation)return;
     const result=await requestClub('PUT',sending);if(generation!==membership.generation)return;
+    // A receipt is immutable. A retry may confirm an older revision after another writer saved.
+    const latestRevision=await requestRevision();if(generation!==membership.generation)return;
+    if(latestRevision>result.revision){
+      if(cloud.draft?.mutationId===sending.mutationId){cloud.draft=null;await cacheDraft(null);await loadCloud();storageOK=true;return;}
+      cloud.conflict=true;cloud.error=cloudText('저장은 완료됐지만 그 뒤 다른 변경이 있습니다. 추가 입력을 백업해 주세요.','The save succeeded, then another member changed records. Back up your later edits.');return;
+    }
     cloud.revision=result.revision;cloud.savedAt=result.savedAt;cloud.attempts=0;
     if(cloud.draft?.mutationId===sending.mutationId){cloud.draft=null;state.meta.savedAt=result.savedAt;storageOK=true;await cacheDraft(null);offlineToast(cloudText('사이트에 저장했습니다.','Saved to club storage.'));}
     else if(cloud.draft){cloud.draft.baseRevision=result.revision;await cacheDraft(cloud.draft);}
   }catch(error){
     if(generation!==membership.generation)return;storageOK=false;cloud.error=error.message;cloud.errorStatus=error.status||0;
-    if(error.status===409)cloud.conflict=true;else if(!error.status||error.status>=500){cloud.attempts++;if(cloud.attempts<=3)cloud.timer=setTimeout(flushCloud,[1000,3000,8000][cloud.attempts-1]);}
+    if(error.status===409)cloud.conflict=true;else if(!error.status||error.status>=500){cloud.attempts++;scheduleCloudRetry();}
     offlineToast(cloud.error,true);if(error.status===401||error.status===403)checkMember().catch(()=>{});
   }finally{if(generation===membership.generation){cloud.inFlight=false;updateSaveStatus();if(cloud.draft&&!cloud.conflict&&!cloud.error){clearTimeout(cloud.timer);cloud.timer=setTimeout(flushCloud,100);}}}
 }
 function renderMembers(){
   const filtered=membership.members.filter(m=>(m.display_name+' '+m.email).toLowerCase().includes(membership.query.toLowerCase()));
-  return `<section class="panel member-card"><h1>${cloudText('회원 관리','Member management')}</h1><p class="smallnote">${cloudText('가입 신청을 승인하고 회원의 권한과 이용 상태를 관리합니다.','Approve registrations and manage member roles and access.')}</p><div class="member-stats">${['pending','active','disabled'].map(s=>`<span>${statusLabel(s)} <b>${membership.members.filter(m=>m.status===s).length}</b></span>`).join('')}</div><div class="member-filter"><input id="member-search" type="search" value="${esc(membership.query)}" placeholder="${cloudText('이름 또는 이메일 검색','Search name or email')}" aria-label="${cloudText('회원 검색','Search members')}"><button class="btn small" data-action="member-refresh">${cloudText('새로고침','Refresh')}</button></div><div class="table-scroll"><table><thead><tr>${[cloudText('회원','Member'),cloudText('권한','Role'),cloudText('상태','Status'),cloudText('가입일','Joined'),cloudText('관리','Manage')].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${filtered.map(m=>`<tr><td><b>${esc(m.display_name)}</b>${m.id===membership.user.id?` <span class="member-self">${cloudText('(나)','(you)')}</span>`:''}<div class="subtext">${esc(m.email)}</div></td><td>${roleLabel(m.role)}</td><td><span class="badge ${m.status==='active'?'green':m.status==='pending'?'amber':'red'}">${statusLabel(m.status)}</span></td><td>${esc(new Date(m.created_at).toLocaleDateString(lang==='en'?'en-GB':'ko-KR',{timeZone:'Asia/Seoul'}))}</td><td><div class="member-tools">${m.status!=='active'?`<button class="btn small primary" data-action="member-change" data-id="${esc(m.id)}" data-role="${m.role}" data-status="active">${m.status==='pending'?cloudText('가입 승인','Approve'):cloudText('이용 재개','Reactivate')}</button>`:''}${m.status!=='disabled'?`<button class="btn small" data-action="member-change" data-id="${esc(m.id)}" data-role="${m.role}" data-status="disabled">${cloudText('비활성화','Disable')}</button>`:''}<button class="btn small light" data-action="member-change" data-id="${esc(m.id)}" data-role="${m.role==='admin'?'member':'admin'}" data-status="${m.status}">${m.role==='admin'?cloudText('일반 회원으로','Make member'):cloudText('관리자로','Make admin')}</button></div></td></tr>`).join('')||`<tr><td colspan="5" class="members-empty">${cloudText('표시할 회원이 없습니다.','No members to display.')}</td></tr>`}</tbody></table></div></section>`;
+  return `<section class="panel member-card"><h1>${cloudText('회원 관리','Member management')}</h1><p class="smallnote">${cloudText('가입 신청을 승인하고 회원의 권한과 이용 상태를 관리합니다.','Approve registrations and manage member roles and access.')}</p><div class="member-stats">${['pending','active','disabled'].map(s=>`<span>${statusLabel(s)} <b>${membership.members.filter(m=>m.status===s).length}</b></span>`).join('')}</div><div class="member-filter"><input id="member-search" type="search" value="${esc(membership.query)}" placeholder="${cloudText('이름 또는 이메일 검색','Search name or email')}" aria-label="${cloudText('회원 검색','Search members')}"><button class="btn small" data-action="member-refresh">${cloudText('새로고침','Refresh')}</button></div><div class="table-scroll"><table><thead><tr>${[cloudText('회원','Member'),cloudText('권한','Role'),cloudText('상태','Status'),cloudText('가입일','Joined'),cloudText('관리','Manage')].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${filtered.map(m=>`<tr><td><b>${esc(m.display_name)}</b>${m.id===membership.user.id?` <span class="member-self">${cloudText('(나)','(you)')}</span>`:''}<div class="subtext">${esc(m.email)}</div></td><td>${roleLabel(m.role)}</td><td><span class="badge ${m.status==='active'?'green':m.status==='pending'?'amber':'red'}">${statusLabel(m.status)}</span></td><td>${esc(new Date(m.created_at).toLocaleDateString(lang==='en'?'en-GB':'ko-KR',{timeZone:'Africa/Blantyre'}))}</td><td><div class="member-tools">${m.status!=='active'?`<button class="btn small primary" data-action="member-change" data-id="${esc(m.id)}" data-role="${m.role}" data-status="active">${m.status==='pending'?cloudText('가입 승인','Approve'):cloudText('이용 재개','Reactivate')}</button>`:''}${m.status!=='disabled'?`<button class="btn small" data-action="member-change" data-id="${esc(m.id)}" data-role="${m.role}" data-status="disabled">${cloudText('비활성화','Disable')}</button>`:''}<button class="btn small light" data-action="member-change" data-id="${esc(m.id)}" data-role="${m.role==='admin'?'member':'admin'}" data-status="${m.status}">${m.role==='admin'?cloudText('일반 회원으로','Make member'):cloudText('관리자로','Make admin')}</button></div></td></tr>`).join('')||`<tr><td colspan="5" class="members-empty">${cloudText('표시할 회원이 없습니다.','No members to display.')}</td></tr>`}</tbody></table></div></section>`;
 }
 async function loadMembers(){
   if(!memberAdmin())throw clubError(cloudText('관리자 권한이 필요합니다.','Administrator access is required.'),403);
@@ -214,8 +232,8 @@ async function pollMember(){
   if(data.status!==membership.member?.status||data.status!=='active'||data.role!==membership.member?.role){membership.member=data;if(data.status!=='active'){clearClubAccess();showMemberLanding();}else if(!cloud.ready)await loadCloud();else render();return;}
   membership.member=data;
   if(cloud.ready&&!cloud.draft&&!cloud.loading&&!document.querySelector('#dialog[open]')){
-    const generation=membership.generation,server=await requestClub();if(generation!==membership.generation||cloud.draft||document.querySelector('#dialog[open]'))return;
-    if(server.revision!==cloud.revision){state=server.state;cloud.revision=server.revision;cloud.savedAt=server.savedAt;render();}
+    const generation=membership.generation,revision=await requestRevision();if(generation!==membership.generation||cloud.draft||document.querySelector('#dialog[open]'))return;
+    if(revision!==cloud.revision){const server=await requestClub();if(generation!==membership.generation||cloud.draft||document.querySelector('#dialog[open]'))return;state=server.state;cloud.revision=server.revision;cloud.savedAt=server.savedAt;render();}
   }
 }
 if(CLOUD_SITE){
@@ -235,7 +253,9 @@ if(CLOUD_SITE){
       try{Promise.resolve(handlers[action]?.()).catch(error=>offlineToast(error.message,true));}catch(error){offlineToast(error.message,true);}return;
     }
     if(['language','menu','close-dialog'].includes(action))return;
+    if(action==='offline-maintenance-off'&&memberAdmin())return;
     if(!memberActive()||!cloud.ready){event.preventDefault();event.stopImmediatePropagation();return cloudWarning();}
+    if(action.startsWith('offline-'))return;
     if(action==='snapshot'){event.preventDefault();event.stopImmediatePropagation();return;}
     if(action==='cloud-retry'){event.preventDefault();event.stopImmediatePropagation();cloud.attempts=0;if(cloud.draft){cloud.error='';flushCloud();}else loadCloud();return;}
     if(action==='cloud-reload'){event.preventDefault();event.stopImmediatePropagation();modal(cloudText('최신 기록 불러오기','Load latest records'),`<div class="dialogbody"><p>${cloudText('내 변경 내용을 백업한 뒤 최신 기록으로 바꿔 주세요. 이 창의 미저장 변경 내용은 삭제됩니다.','Back up your edits before loading the latest records. This replaces the unsaved draft.')}</p></div>`,`<div class="dialogfoot">${btn(cloudText('내 변경 내용 백업','Back up my changes'),'backup','download')}${btn(cloudText('취소','Cancel'),'close-dialog','close')}${btn(cloudText('최신 기록으로 변경','Load latest records'),'cloud-discard-confirm','refresh','','primary')}</div>`);return;}
@@ -245,12 +265,12 @@ if(CLOUD_SITE){
   document.addEventListener('submit',event=>{
     if(event.target.id==='member-auth-form'){event.preventDefault();event.stopImmediatePropagation();submitMemberAuth(event.target);return;}
     if(event.target.id==='member-password-form'){event.preventDefault();event.stopImmediatePropagation();if(memberActive())changeMemberPassword(event.target);return;}
-    if(!memberActive()||!cloud.ready||cloud.conflict){event.preventDefault();event.stopImmediatePropagation();cloudWarning();}
+    if(!memberActive()||!cloud.ready||cloud.conflict&&!event.target.id.startsWith('offline-')){event.preventDefault();event.stopImmediatePropagation();cloudWarning();}
   },true);
   document.addEventListener('input',event=>{if(event.target.id==='member-search'){membership.query=event.target.value;const start=event.target.selectionStart;render();const input=document.querySelector('#member-search');input.focus();input.setSelectionRange(start,start);}});
   window.addEventListener('beforeunload',event=>{if(cloud.draft){event.preventDefault();event.returnValue='';}});
   window.addEventListener('online',()=>{if(membership.user){pollMember().catch(()=>{});if(cloud.draft&&!cloud.conflict){cloud.error='';cloud.attempts=0;flushCloud();}}});
-  document.addEventListener('visibilitychange',()=>pollMember().catch(()=>{}));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;pollMember().catch(()=>{});if(cloud.draft&&!cloud.conflict){clearTimeout(cloud.timer);cloud.error='';flushCloud();}});
   let previousLanguage=document.documentElement.lang;new MutationObserver(()=>{if(previousLanguage!==document.documentElement.lang){previousLanguage=document.documentElement.lang;if(!cloud.ready)showMemberLanding();else render();}}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   try{
     const url=new URL(clubConfig.supabaseUrl),key=clubConfig.supabasePublishableKey;
@@ -258,13 +278,14 @@ if(CLOUD_SITE){
     let publicKey=typeof key==='string'&&key.startsWith('sb_publishable_');
     if(!publicKey&&typeof key==='string'&&key.split('.').length===3){try{publicKey=JSON.parse(atob(key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='anon';}catch{}}
     if(!publicKey||!window.supabase?.createClient)throw Error('Invalid public client configuration');
-    membership.client=window.supabase.createClient(url.origin,key,{auth:{storageKey:'chizumulu-members-'+url.hostname,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    const timedFetch=(input,options={})=>{const controller=new AbortController(),abort=()=>controller.abort(),timer=setTimeout(abort,20000);if(options.signal?.aborted)abort();else options.signal?.addEventListener('abort',abort,{once:true});return fetch(input,{...options,signal:controller.signal}).finally(()=>{clearTimeout(timer);options.signal?.removeEventListener('abort',abort);});};
+    membership.client=window.supabase.createClient(url.origin,key,{global:{fetch:timedFetch},auth:{storageKey:'chizumulu-members-'+url.hostname,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     membership.client.auth.onAuthStateChange((event,session)=>{
       if(event==='TOKEN_REFRESHED'||event==='USER_UPDATED')return;
       if(event==='PASSWORD_RECOVERY')membership.recovery=true;
       if(event==='SIGNED_OUT'){membership.sync++;membership.user=null;membership.member=null;membership.members=[];membership.query='';clearClubAccess();showMemberLanding();return;}
       setTimeout(()=>syncMemberSession(session),0);
     });
-    checkMember().catch(error=>showMemberLanding(error.message));setInterval(()=>pollMember().catch(()=>{}),20000);
+    checkMember().catch(error=>{if(typeof restoreOfflineSession==='function'&&offlineSync.enabled&&cloud.ready&&!offlineSync.connected&&(!error.status||error.status>=500)){updateSaveStatus();return;}showMemberLanding(error.message);});let lastPoll=0;setInterval(()=>{const interval=navigator.connection?.saveData?120000:20000;if(Date.now()-lastPoll>=interval){lastPoll=Date.now();pollMember().catch(()=>{});}},20000);
   }catch{showMemberLanding();}
 }

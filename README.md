@@ -2,6 +2,8 @@
 
 사이트: https://ryukkani.github.io/Chizumulu-United/
 
+오프라인 시험판의 사용 범위, 검사 결과와 실제 서버 이전 절차는 [오프라인 사용 및 이전 안내](docs/offline-runbook.md)를 확인하세요. 새 구조는 관리자 전환 전까지 활성화되지 않습니다.
+
 회원가입 → 관리자 승인 → 로그인 후 구단 기록 공동 관리 방식입니다. 사용자는 GitHub 토큰을 발급하지 않습니다. 화면은 GitHub Pages, 회원 인증과 구단 기록은 Supabase에서 제공합니다.
 
 ## 회원과 권한
