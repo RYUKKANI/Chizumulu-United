@@ -1,6 +1,6 @@
 /* Versioned shell only. Auth/API responses, medical information and private photos are never cached here. */
-const VERSION='chizumulu-shell-4.0.1-mobile-1';
-const SHELL=['index.html','config.js','vendor/supabase.js','operations-model.js','operations.js','operations.css','membership.js','membership.css','club-workspace-model.js','club-workspace.js','club-workspace.css','administration-model.js','administration.js','administration.css','lineup-model.js','lineup.js','lineup.css','offline-model.js','offline-client.js','offline-ui.js','offline-media.js','offline-admin.js','app-update.js','mobile-workflow.js','mobile-workflow.css','offline.css','fonts/noto-kr.css','favicon.svg','manifest.webmanifest'];
+const VERSION='chizumulu-shell-4.0.2-daily-2';
+const SHELL=['index.html','config.js','vendor/supabase.js','operations-model.js','operations.js','operations.css','membership.js','membership.css','club-workspace-model.js','club-workspace.js','club-workspace.css','administration-model.js','administration.js','administration.css','lineup-model.js','lineup.js','lineup.css','offline-model.js','offline-client.js','offline-ui.js','offline-media.js','offline-admin.js','app-update.js','mobile-workflow.js','mobile-workflow.css','daily-workspace.js','daily-workspace.css','offline.css','fonts/noto-kr.css','favicon.svg','manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(c=>c.addAll(SHELL))));
 // No skipWaiting: an open form or offline queue is never interrupted by automatic reload.
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const key of await caches.keys())if(key.startsWith('chizumulu-shell-')&&key!==VERSION)await caches.delete(key);await self.clients.claim();})()));
