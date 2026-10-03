@@ -1,0 +1,48 @@
+/* Blue branding and crest stay in the existing theme. Reduce chrome above the work. */
+body[data-daily-workspace="ready"] #content>.breadcrumbs{display:none}
+body[data-daily-workspace="ready"] .pagehead{margin-bottom:12px;gap:12px}
+body[data-daily-workspace="ready"] .pagehead h1{font-size:25px;margin-bottom:3px}
+body[data-daily-workspace="ready"] .pagehead p{font-size:13px}
+body[data-daily-workspace="ready"] .structure-tabs{margin-bottom:12px}
+body[data-daily-workspace="ready"] .compact-summary{margin-bottom:12px}
+body[data-daily-workspace="ready"] .offline-status{padding:9px 12px;border-radius:8px;gap:10px;align-items:center;margin-bottom:14px;font-size:13px}
+@media(min-width:1100px){
+ .offline-status:not([data-expanded="true"]) [data-sync-time],.offline-status:not([data-expanded="true"]) .offline-tools{display:none}
+ .offline-status[data-expanded="true"] .offline-tools{order:3;flex-basis:100%}
+ .daily-roster-layout{display:grid;grid-template-columns:minmax(0,1fr) 278px;gap:16px;align-items:start}
+ .daily-roster-layout .compact-roster{min-width:0}
+ .daily-roster-layout table{table-layout:fixed;white-space:normal}
+ .daily-roster-layout col{width:auto!important}
+ .daily-roster-layout col:nth-child(1),.daily-roster-layout col:nth-child(3),.daily-roster-layout col:nth-child(7),.daily-roster-layout col:nth-child(8),.daily-roster-layout th:nth-child(1),.daily-roster-layout th:nth-child(3),.daily-roster-layout th:nth-child(7),.daily-roster-layout th:nth-child(8),.daily-roster-layout td:nth-child(1),.daily-roster-layout td:nth-child(3),.daily-roster-layout td:nth-child(7),.daily-roster-layout td:nth-child(8){display:none}
+ .daily-roster-layout col:nth-child(2){width:43%!important}
+ .daily-roster-layout col:nth-child(4){width:23%!important}
+ .daily-roster-layout th,.daily-roster-layout td{padding:12px 10px;font-size:12px}
+ .daily-roster-layout .player-cell{gap:8px}.daily-roster-layout .playername{font-size:13px;white-space:normal;text-align:left}
+ .daily-roster-layout .filters{padding:12px;gap:8px}.daily-roster-layout .search{flex-basis:100%;min-width:0}
+ .daily-roster-layout .filterselect{min-width:0;flex:1}.daily-roster-layout .tablemeta{padding:10px 12px;font-size:12px;gap:6px}
+ .daily-roster-search{display:flex;gap:8px;padding:12px;align-items:center}.daily-roster-search .search{flex:1;min-width:0}.daily-roster-search .btn{font-size:12px;padding-inline:10px}
+ #daily-roster-filters[hidden]{display:none!important}.daily-roster-layout #daily-roster-filters select{min-width:0;flex:1}
+ .daily-roster-layout .tablemeta select{max-width:150px}.daily-roster-layout .tabs{gap:13px;padding:0 12px}.daily-roster-layout .tab{font-size:12px}
+ .roster-selected{background:#edf4ff;box-shadow:inset 3px 0 #225cba}
+}
+.roster-preview{padding:20px;position:sticky;top:120px;min-width:0}
+.roster-preview-id{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted)}
+.roster-preview h2{font-size:20px;color:#003c8c;margin:14px 0 4px;overflow-wrap:anywhere}
+.roster-preview p{margin:0 0 14px;color:var(--muted);font-size:12px}
+.roster-preview .profile-statuses{gap:5px;flex-wrap:wrap}
+.roster-preview dl{margin:18px 0;border-block:1px solid var(--line);padding:9px 0}
+.roster-preview dl div{display:flex;justify-content:space-between;gap:8px;padding:8px 0;font-size:12px}.roster-preview dd{margin:0;font-weight:700}
+.roster-preview h3{font-size:13px}.roster-preview ul{list-style:none;padding:0;font-size:12px}.roster-preview li{display:flex;justify-content:space-between;gap:8px;margin:12px 0}.roster-preview li span{overflow-wrap:anywhere}
+.roster-preview-actions{display:grid;gap:8px;margin-top:20px}
+.daily-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:16px;border-bottom:1px solid var(--line)}
+.daily-controls label{display:grid;gap:7px;font-size:12px;font-weight:700}.daily-controls input,.daily-controls select{padding:10px;border:1px solid #cbd6e4;border-radius:5px;background:#fff;min-height:44px;max-width:100%}
+.daily-session-label{flex:1;min-width:160px}.daily-controls .btn{min-height:44px}
+.daily-progress{padding:14px 16px;background:#f4f8ff;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px}.daily-progress span{color:var(--muted)}
+.daily-player-row{display:grid;grid-template-columns:minmax(0,1fr) auto 100px;gap:16px;align-items:center;padding:13px 16px;border-top:1px solid var(--line)}
+.daily-plan{display:block;color:var(--muted);font-size:11px;margin:5px 0 0 48px}
+.daily-markers{display:flex;gap:6px;align-items:center}.daily-markers .btn,.daily-markers select{min-height:44px;min-width:56px;font-size:13px;padding:9px}
+.daily-markers .selected{background:#225cba;border-color:#225cba;color:white}.daily-markers select{border:1px solid #d5dce7;border-radius:5px;background:#fff;max-width:110px}
+.daily-record-label{font-size:12px;color:var(--muted)}
+.daily-attendance>.notice{margin:12px 16px}
+@media(max-width:760px){.daily-controls{gap:10px}.daily-controls .daily-session-label{flex:1;min-width:140px}.daily-controls .daily-session-create{font-size:12px;padding-inline:10px}.daily-player-row{grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:14px 12px}.daily-markers{grid-column:1 / -1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.daily-markers .btn,.daily-markers select{width:100%;min-width:0;max-width:none}.daily-record-label{grid-column:2;grid-row:1;text-align:right;max-width:85px}.daily-plan{margin-left:46px}.daily-progress{gap:6px}.daily-attendance .playername{font-size:14px;text-align:left}}
+@media print{.roster-preview,.daily-controls,.daily-markers{display:none!important}.daily-roster-layout{display:block}.daily-player-row{grid-template-columns:1fr auto}}

@@ -11,6 +11,7 @@
     "test:browser": "node tests/browser.cjs",
     "test:operations": "node tests/operations.cjs",
     "test:workspace": "node tests/workspace.cjs",
+    "test:daily": "node tests/daily-workspace.cjs",
     "test:administration": "node tests/administration.cjs",
     "test:lineup": "node tests/lineup.cjs"
   },

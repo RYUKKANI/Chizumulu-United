@@ -30,5 +30,22 @@
     groups.postponed.sort(round);groups.all.sort(round);
     return groups;
   }
-  return {validatePlans,upsert,fixtureGroups};
+  function dailyRecord(state,playerId,date,sessionId='',sessions=[],migrated=false){
+    if(!dateValid(date))throw Error('훈련 날짜를 확인해 주세요.');
+    const session=migrated?sessions.find(s=>s.id===sessionId&&s.date===date):null;
+    if(migrated&&!session)return {record:null,blocked:'session'};
+    const rows=(state.training||[]).filter(r=>r.playerId===playerId&&(migrated?r.sessionId===session.id:r.date===date));
+    return {record:rows.length===1?rows[0]:null,blocked:rows.length>1?'multiple':'',session};
+  }
+  function markDailyAttendance(state,options){
+    const {playerId,date,sessionId='',sessions=[],migrated=false,status,id,today}=options;
+    if(!state.players.some(p=>p.id===playerId&&p.status==='Active')||!dateValid(today)||!dateValid(date)||date>today)throw Error('선수와 훈련 날짜를 확인해 주세요. 미래 출석은 기록할 수 없습니다.');
+    if(!['Present','Late','Absent','Excused','Rehab'].includes(status))throw Error('출석 상태를 확인해 주세요.');
+    const context=dailyRecord(state,playerId,date,sessionId,sessions,migrated);
+    if(context.blocked)throw Error(context.blocked==='session'?'훈련 회차를 먼저 선택해 주세요.':'같은 날짜에 기록이 여러 개입니다. 훈련 기록에서 회차별로 수정해 주세요.');
+    if(context.record)context.record.attendance=status;
+    else{if(typeof id!=='string'||!id||(state.training||[]).some(r=>r.id===id))throw Error('기록 ID를 확인해 주세요.');state.training.push({id,playerId,date,...(migrated?{sessionId}:{}),type:'기술 훈련',attendance:status,minutes:0,rpe:'',notes:''});}
+    if(state.operations?.attendancePlans)delete state.operations.attendancePlans[date+'|'+playerId];
+  }
+  return {validatePlans,upsert,fixtureGroups,dailyRecord,markDailyAttendance};
 });
